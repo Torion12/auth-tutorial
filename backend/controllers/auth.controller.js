@@ -23,13 +23,14 @@ export const login = async (req, res) => {
         .json({ success: "false", message: "Email is Invalid!" });
     }
 
-    //Password Validation
     const isPasswordValid = await bcryptjs.compare(password, user.password);
     if (!isPasswordValid) {
       return res
         .status(400)
         .json({ success: "fail", message: "Password is Invalid!" });
     }
+
+    //Password Validation
 
     await generateTokenAndSetCookies(res, user._id);
     user.lastLogin = new Date();
@@ -48,7 +49,7 @@ export const login = async (req, res) => {
 //logout controller
 export const logout = (req, res) => {
   res.clearCookie("token");
-  res.status(200).json({ success: "true", message: "Logged Out sucessfully!" });
+  res.status(200).json({ success: "true", message: "Logout sucessfully!" });
 };
 
 //signup Controller
@@ -61,12 +62,14 @@ export const signup = async (req, res) => {
         .status(400)
         .json({ success: false, message: "All fields are Required!" });
     }
+
     const userAlreadyExists = await User.findOne({ email });
     if (userAlreadyExists) {
       res
         .status(400)
         .json({ success: "Failed!", message: "User Already Exist!" });
     }
+
     //hash the password
     const hashedPassword = await bcryptjs.hash(password, 10);
     //verification code for sending in the email!
@@ -190,11 +193,7 @@ export const resetPassword = async (req, res) => {
         .json({ success: "fail", message: "Invalid or Expired reset Token" });
     }
 
-<<<<<<< HEAD
     //Hashed the new password
-=======
-    //Hashed the new password     
->>>>>>> backend
     const hashedPassword = await bcryptjs.hash(newPassword, 10);
     //update the user new password to the db
     user.password = hashedPassword;
@@ -212,5 +211,26 @@ export const resetPassword = async (req, res) => {
   } catch (error) {
     console.log("reset error:", error);
     res.status(400).json({ success: "false", message: error.message });
+  }
+};
+
+export const checkAuth = async (req, res) => {
+  try {
+    const user = await User.findById(req.userId).select("-password");
+    if (!user) {
+      return res
+        .status(400)
+        .json({ success: false, message: "User not found" });
+    }
+    res.status(200).json({
+      success: "true",
+      user: {
+        ...user._doc,
+        password: undefined,
+      },
+    });
+  } catch (error) {
+    console.log("Error in checkAuth:", error);
+    return res.status(401).json({ success: "false", message: error.message });
   }
 };
