@@ -7,7 +7,7 @@ export const verifyToken = (req, res, next) => {
       .status(401)
       .json({ success: "fail", message: "Unauthorize Access" });
   }
-  
+
   try {
     const decode = jtw.verify(token, process.env.JTW_SECRET);
     if (!decode) {
@@ -16,9 +16,11 @@ export const verifyToken = (req, res, next) => {
         .json({ success: "false", message: "Unauthorized Access" });
     }
     req.userId = decode.userId;
+    console.log(req.userId);
+
     next();
   } catch (error) {
     console.log("error in verifyToken : ", error);
-    return json({ success: "false", message: "server Error" });
+    return res.status(400).json({ success: "false", message: error.message });
   }
 };
