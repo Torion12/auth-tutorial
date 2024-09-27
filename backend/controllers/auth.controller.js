@@ -23,6 +23,12 @@ export const login = async (req, res) => {
         .json({ success: "false", message: "Email is Invalid!" });
     }
 
+    if (!user.isVerified) {
+      return res
+        .status(400)
+        .json({ success: "false", message: "Account need to be Verify" });
+    }
+
     const isPasswordValid = await bcryptjs.compare(password, user.password);
     if (!isPasswordValid) {
       return res
@@ -58,14 +64,12 @@ export const signup = async (req, res) => {
 
   try {
     if (!email || !name || !password) {
-      return res
-        .status(400)
-        .json({ success: false, message: "All fields are Required!" });
+      throw new Error("All fields are Required!");
     }
 
     const userAlreadyExists = await User.findOne({ email });
     if (userAlreadyExists) {
-      res
+      return res
         .status(400)
         .json({ success: "Failed!", message: "User Already Exist!" });
     }
@@ -88,7 +92,7 @@ export const signup = async (req, res) => {
     //jtw Token
     generateTokenAndSetCookies(res, user._id);
     //email Send to the new User
-    await nodeEmailVerification(email, verification);
+    // await nodeEmailVerification(email, verification);
 
     res.status(201).json({
       success: true,
@@ -99,7 +103,7 @@ export const signup = async (req, res) => {
       },
     });
   } catch (error) {
-    console.log("Error", error.message);
+    return res.status(400).json({ success: false, message: error.message });
   }
 };
 
@@ -113,7 +117,7 @@ export const verifyEmail = async (req, res) => {
     });
     if (!user) {
       return res.status(400).json({
-        sucess: "faild",
+        sucess: "failed",
         message: "Invalid or Expired verification Code",
       });
     }
@@ -124,7 +128,7 @@ export const verifyEmail = async (req, res) => {
     user.save();
 
     // await sendWelcomeEmail(user.email, user.name);
-    await nodeWelcomeEmail(user.email, user.name);
+    // await nodeWelcomeEmail(user.email, user.name);
     console.log("Email Sent Successfully");
     res.status(200).json({
       success: true,
@@ -159,14 +163,18 @@ export const forgotPassword = async (req, res) => {
     await user.save();
 
     // generate resetPassword to email
-    await resetPasswordEmail(
-      email,
-      `http://localhost:4000/reset-password/${resetToken}`
-    );
+    // await resetPasswordEmail(
+    //   email,
+    //   `http://localhost:4000/reset-password/${resetToken}`
+    // );
 
     return res.status(201).json({
       success: "True",
       message: "Reset Password has been sent to your email!",
+      user: {
+        ...user._doc,
+        password: undefined,
+      },
     });
   } catch (error) {
     console.log("Resset password fail: ", error);
